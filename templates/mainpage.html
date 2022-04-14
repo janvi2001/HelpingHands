@@ -238,9 +238,10 @@ $('.image-upload-wrap').bind('dragover', function () {
 <script class="jsbin" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 <div class="file-upload">
   <button class="file-upload-btn" type="button" onclick="$('.file-upload-input').trigger( 'click' )">Upload EEG Data</button>
-
+  <form method="post" enctype="multipart/form-data" action="{% url 'upload_csv' %}">
+    {% csrf_token %}
   <div class="image-upload-wrap">
-    <input class="file-upload-input" type='file' onchange="readURL(this);" accept=".csv" />
+    <input class="file-upload-input" type='file' onchange="readURL(this);" name="file" accept=".csv" />
     <div class="drag-text">
       <h3>Drag and drop your CSV File</h3>
     </div>
@@ -249,16 +250,26 @@ $('.image-upload-wrap').bind('dragover', function () {
     <img class="file-upload-image" src="#" alt="" />
     <div class="image-title-wrap">
       <button type="button" onclick="removeUpload()" class="remove-image">Remove <span class="image-title">Uploaded File</span></button>
-       <input class="remove-image" type="button" ng-click="uploadFile()" value="Upload" />
+      
+       <input class="remove-image" type="submit" value="Upload" />
         <div ng-show="progressVisible">
             <div class="percent"></div>
             <div class="progress-bar">
                 <div class="uploaded" ng-style="{'width': progress+'%'}"></div>
             </div>
         </div>
+      
     </div>
   </div>
+</form>
 </div>
+{% if output %}
+<div>
+  <p>
+    <center><h1 name="out" id="out"></h1></center>
+  </p>
+</div>
+{% endif %}
 </div>
 </section>
 
@@ -323,6 +334,19 @@ $('.image-upload-wrap').bind('dragover', function () {
 
   <!-- Template Main JS File -->
   <script src="{% static 'assets/js/main.js' %}"></script>
+  <script>
+    var text = {{ output | safe }};
+    var counter = 0;
+    var elem = document.getElementById("out");
+    var inst = setInterval(change, 1000);
+
+    function change() {
+      elem.innerHTML = text[counter];
+      counter++;
+  
+    }
+
+  </script>
 
 </body>
 
