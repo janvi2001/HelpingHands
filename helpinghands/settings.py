@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-vokntop-pryerpw-tl-#e1bo3^vy&-0g6!3z&staxo9vq-%5f%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 
