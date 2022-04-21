@@ -260,10 +260,10 @@ $('.image-upload-wrap').bind('dragover', function () {
       <h3>Drag and drop your CSV File</h3>
     </div>
   </div>
+  <div class="container pt-3">
   <div class="file-upload-content">
     <div class="image-title-wrap">
-      <button type="button" onclick="removeUpload()" class="remove-image">Remove <span class="image-title">Uploaded File</span></button>
-      
+      <button type="button" onclick="removeUpload()" class="remove-image col-12 responsive-width">Remove <span class="image-title">Uploaded File</span></button><br><br>
        <input class="remove-image" type="submit" value="Upload" />
         <div ng-show="progressVisible">
             <div class="percent"></div>
@@ -273,6 +273,7 @@ $('.image-upload-wrap').bind('dragover', function () {
         </div>
       
     </div>
+  </div>
   </div>
 </form>
 </div>
