@@ -1,1 +1,1 @@
-web: gunicorn helpinghand.wsgi
+web: gunicorn helpinghands.wsgi
