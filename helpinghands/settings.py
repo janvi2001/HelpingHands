@@ -64,13 +64,13 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'helpinghands.urls'
 
 CORS_ALLOWED_ORIGINS = [
-    'http://aiktchelpinghands.herokuapp.com/',
-    'https://aiktchelpinghands.herokuapp.com/',
+    'http://aiktchelpinghands.herokuapp.com',
+    'https://aiktchelpinghands.herokuapp.com',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://aiktchelpinghands.herokuapp.com/',
-    'https://aiktchelpinghands.herokuapp.com/',
+    'http://aiktchelpinghands.herokuapp.com',
+    'https://aiktchelpinghands.herokuapp.com',
 ]
 
 TEMPLATES = [
