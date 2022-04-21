@@ -26,7 +26,13 @@ SECRET_KEY = 'django-insecure-vokntop-pryerpw-tl-#e1bo3^vy&-0g6!3z&staxo9vq-%5f%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "*",
+    'http://aiktchelpinghands.herokuapp.com',
+    'https://aiktchelpinghands.herokuapp.com',
+    'aiktchelpinghands.herokuapp.com',
+    '.herokuapp.com',
+    ]
 
 
 
@@ -39,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'helpapp'
 ]
 
@@ -50,9 +57,21 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+     'corsheaders.middleware.CorsMiddleware',
+        'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'helpinghands.urls'
+
+CORS_ALLOWED_ORIGINS = [
+    'http://aiktchelpinghands.herokuapp.com/',
+    'https://aiktchelpinghands.herokuapp.com/',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://aiktchelpinghands.herokuapp.com/',
+    'https://aiktchelpinghands.herokuapp.com/',
+]
 
 TEMPLATES = [
     {
