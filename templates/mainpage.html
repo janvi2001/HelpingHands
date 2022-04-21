@@ -129,7 +129,11 @@ $('.image-upload-wrap').bind('dragover', function () {
   border: 4px dashed #012970;
   position: relative;
 }
-
+.output-wrap {
+  margin-top: 20px;
+  border: 4px solid #012970;
+  position: relative;
+}
 .image-dropping,
 .image-upload-wrap:hover {
   background-color: #4FC3F7 ;
@@ -151,7 +155,17 @@ $('.image-upload-wrap').bind('dragover', function () {
   color: #4154F1;
   padding: 60px 0;
 }
+.output-text {
+  background-color: rgb(12, 59, 59);
+  text-align: center;
+}
 
+.output-text h3 {
+  font-weight: 100;
+  text-transform: uppercase;
+  color: #d6d7dc;
+  padding: 60px 0;
+}
 .file-upload-image {
   max-height: 200px;
   max-width: 200px;
@@ -247,7 +261,6 @@ $('.image-upload-wrap').bind('dragover', function () {
     </div>
   </div>
   <div class="file-upload-content">
-    <img class="file-upload-image" src="#" alt="" />
     <div class="image-title-wrap">
       <button type="button" onclick="removeUpload()" class="remove-image">Remove <span class="image-title">Uploaded File</span></button>
       
@@ -265,10 +278,26 @@ $('.image-upload-wrap').bind('dragover', function () {
 </div>
 {% if output %}
 <div>
+  <div class="file-upload">
+    <img class="file-upload-image" src="#" alt="" />
+    <h1 style="text-align: center;">Output of your EEG Data</h1>
+    <form method="post" enctype="multipart/form-data" action="{% url 'upload_csv' %}">
+      {% csrf_token %}
+    <div class="output-wrap">
+      <!-- <input class="file-upload-input" type='file' onchange="readURL(this);" name="file" accept=".csv" /> -->
+      <div class="output-text">
+        <p>
+          <center><h3 name="out" id="out"></h3></center>
+        </p>      
+      </div>
+
+    </div>
+  </form>
+  <!-- </div>
   <p>
     <center><h1 name="out" id="out"></h1></center>
   </p>
-</div>
+</div> -->
 {% endif %}
 </div>
 </section>
@@ -335,10 +364,10 @@ $('.image-upload-wrap').bind('dragover', function () {
   <!-- Template Main JS File -->
   <script src="{% static 'assets/js/main.js' %}"></script>
   <script>
-    var text = {{ output | safe }};
+    var text = {{ output | safe}};
     var counter = 0;
     var elem = document.getElementById("out");
-    var inst = setInterval(change, 1000);
+    var inst = setInterval(change, 1500);
 
     function change() {
       elem.innerHTML = text[counter];
