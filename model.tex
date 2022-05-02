@@ -1,0 +1,1150 @@
+\hypertarget{model-training}{%
+\section{MODEL TRAINING}\label{model-training}}
+
+\hypertarget{imports}{%
+\subsection{Imports}\label{imports}}
+
+\begin{lstlisting}[language=Python]
+# To use the wavelet decomposition function in the PyWavelets module
+import pywt  
+
+# For data handling
+import numpy as np
+import pandas as pd
+
+# To handle file path
+from glob import glob
+
+# To use mathematical functions
+from math import sqrt,log10
+
+# To save and load our model 
+import joblib
+
+# To train a decision tree classification model
+from sklearn.tree import DecisionTreeClassifier
+
+# To ignore any warnings that may be prompted
+import warnings
+warnings.filterwarnings('ignore')
+\end{lstlisting}
+
+\hypertarget{denoising-eeg-signals-using-discrete-wavelet-transform}{%
+\subsection{Denoising EEG Signals using Discrete Wavelet
+Transform}\label{denoising-eeg-signals-using-discrete-wavelet-transform}}
+
+\begin{lstlisting}[language=Python]
+def madev(d, axis=None):
+    '''
+    Median absolute deviation of a signal
+    ''' 
+    return np.median(np.absolute(d))
+
+
+def wavelet_denoising(x):
+    ''' 
+    Function to denoise the EEG signals using the discrete wavelet transform. 
+    '''
+    # Using wavelet decomposition to apply DWT on 4 levels
+    c = pywt.wavedec(x,"sym18", mode="per",level = 4)
+    
+    # Calculation for universal threshold
+    sigma = (1/0.6745) * madev(c[-1])
+    univ_thresh = sigma * np.sqrt(2 * np.log(len(x)))
+    
+    # Applying hard thresholding using the universal threshold 
+    # calculated in the previous step
+    c[1:] = (pywt.threshold(i, value=univ_thresh, mode='hard') for i in c[1:])
+    
+    return pywt.waverec(c, "sym18", mode='per')
+\end{lstlisting}
+
+\hypertarget{feature-extraction-of-eeg-signals-using-discrete-wavelet-transform}{%
+\subsection{Feature Extraction of EEG Signals using Discrete Wavelet
+Transform}\label{feature-extraction-of-eeg-signals-using-discrete-wavelet-transform}}
+
+\begin{lstlisting}[language=Python]
+def FEdwt(s):
+    '''
+    Function to extract features (namely information relating to the alpha(8-12Hz) and 
+    beta(13-30Hz) frequency bands that corespond to the performance of motor functions.)
+    from EEG signals.
+    '''
+    # Using wavelet decomposition to apply DWT on 5 levels 
+    # to get frequencies upto approx. the alpha band 
+    coefli = pywt.wavedec(s,"sym18", mode="per", level=5)
+    
+    # Making a list of features and appending the original signal
+    features = []
+    features.append(s)
+    
+    # Appending only the decompositions coresponding to the alpha and beta bands
+    for c in coefli[1:3:]:
+        features.append(pd.DataFrame(pywt.idwt(None, c,"sym18", mode="per")))
+    
+    # Final dataframe of signal and features extracted from it
+    featr = pd.concat([feature for feature in features])
+    return featr
+\end{lstlisting}
+
+\hypertarget{data-preprocessing}{%
+\subsection{Data PreProcessing}\label{data-preprocessing}}
+
+\hypertarget{train---test-split-75---25}{%
+\subsubsection{Train - Test split : 75\% -
+25\%}\label{train---test-split-75---25}}
+
+\begin{lstlisting}[language=Python]
+# Get the file path to all files present in the train and test folders
+train_fnames =  glob('data/train/subj*_data.csv')
+test_fnames =  glob('data/test/subj*_data.csv')
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python]
+def preprocess_data(fname):
+    
+    # Store data in a dataframe and drop the id column
+    datax = pd.read_csv(fname)
+    datax.drop(['id'], axis = 1, inplace=True)
+    
+    # Denoise the signal and re-attach the header to the result
+    cols = datax.columns
+
+    datax = pd.DataFrame(wavelet_denoising(datax))
+    datax.columns = cols
+    
+    # Get output filename from data filename
+    events = fname.replace('_data','_events') 
+    datay = pd.read_csv(events)
+
+    # Drop the id column
+    datay.drop(['id'], axis = 1, inplace=True)
+    
+    # Channel Selection to reduce dimensionality and preserve raw data
+    # Drop all channels that are away from the central lobe
+    datax.drop([x for x in datax.columns if 'C' not in x], axis = 1, inplace=True)
+
+    # Concatenating all labels to end of the data
+    for col in datay.columns:
+        datax[f'{col}_output'] = datay[col]
+    
+    return datax
+\end{lstlisting}
+
+\begin{lstlisting}[language=Python]
+# Concatenating all training data 
+train_data = pd.concat([preprocess_data(fname) for fname in train_fnames])
+train_data
+\end{lstlisting}
+
+FC5
+
+FC1
+
+FC2
+
+FC6
+
+C3
+
+Cz
+
+C4
+
+CP5
+
+CP1
+
+CP2
+
+CP6
+
+HandStart\_output
+
+FirstDigitTouch\_output
+
+BothStartLoadPhase\_output
+
+LiftOff\_output
+
+Replace\_output
+
+BothReleased\_output
+
+0
+
+292.183972
+
+300.131051
+
+308.161367
+
+315.968030
+
+329.734439
+
+335.162066
+
+339.322013
+
+342.841195
+
+340.881812
+
+337.439870
+
+332.651406
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+1
+
+288.927679
+
+296.780747
+
+304.716068
+
+312.430381
+
+326.033940
+
+331.397360
+
+335.508097
+
+338.985647
+
+337.049443
+
+333.648218
+
+328.916400
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+2
+
+271.703353
+
+279.387597
+
+287.152326
+
+294.700799
+
+308.011911
+
+313.260029
+
+317.282394
+
+320.685185
+
+318.790605
+
+315.462499
+
+310.832405
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+3
+
+249.053309
+
+260.469669
+
+272.005604
+
+283.220250
+
+302.996359
+
+310.793405
+
+316.769369
+
+321.824842
+
+319.010095
+
+314.065580
+
+307.186722
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+4
+
+249.304860
+
+265.001491
+
+280.862528
+
+296.281817
+
+323.472469
+
+334.192817
+
+342.409316
+
+349.360209
+
+345.490144
+
+338.691810
+
+329.233902
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+141421
+
+81.553617
+
+55.054955
+
+28.278747
+
+2.248287
+
+-43.654296
+
+-61.752120
+
+-75.623009
+
+-87.357333
+
+-80.823986
+
+-69.347209
+
+-53.380602
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+141422
+
+107.748201
+
+81.887391
+
+55.755716
+
+30.351838
+
+-14.445819
+
+-32.108009
+
+-45.645010
+
+-57.096876
+
+-50.720793
+
+-39.520275
+
+-23.938002
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+141423
+
+120.161328
+
+96.299704
+
+72.188155
+
+48.748139
+
+7.413594
+
+-8.883209
+
+-21.373723
+
+-31.940296
+
+-26.057120
+
+-15.722465
+
+-1.344790
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+141424
+
+130.386958
+
+104.762738
+
+78.870133
+
+53.698665
+
+9.310845
+
+-8.189760
+
+-21.602916
+
+-32.950013
+
+-26.632263
+
+-15.534214
+
+-0.094498
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+141425
+
+149.150528
+
+125.297457
+
+101.194552
+
+77.762938
+
+36.443210
+
+20.152249
+
+7.666212
+
+-2.896573
+
+2.984494
+
+13.315444
+
+27.687966
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+1807279 rows × 17 columns
+
+\begin{lstlisting}[language=Python]
+# Concatenating all testing data 
+test_data = pd.concat([preprocess_data(fname) for fname in test_fnames])
+test_data
+\end{lstlisting}
+
+FC5
+
+FC1
+
+FC2
+
+FC6
+
+C3
+
+Cz
+
+C4
+
+CP5
+
+CP1
+
+CP2
+
+CP6
+
+HandStart\_output
+
+FirstDigitTouch\_output
+
+BothStartLoadPhase\_output
+
+LiftOff\_output
+
+Replace\_output
+
+BothReleased\_output
+
+0
+
+-373.220094
+
+-380.495103
+
+-387.846311
+
+-394.992779
+
+-407.594989
+
+-412.563611
+
+-416.371760
+
+-419.593331
+
+-417.799649
+
+-414.648786
+
+-410.265274
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+1
+
+-376.130104
+
+-383.550627
+
+-391.048872
+
+-398.338283
+
+-411.192561
+
+-416.260565
+
+-420.144883
+
+-423.430891
+
+-421.601333
+
+-418.387447
+
+-413.916256
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+2
+
+-386.955898
+
+-393.351202
+
+-399.813490
+
+-406.095796
+
+-417.174128
+
+-421.541937
+
+-424.889598
+
+-427.721612
+
+-426.144825
+
+-423.374969
+
+-419.521518
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+3
+
+-397.889565
+
+-403.693940
+
+-409.559108
+
+-415.260926
+
+-425.315613
+
+-429.279833
+
+-432.318169
+
+-434.888503
+
+-433.457412
+
+-430.943492
+
+-427.446102
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+4
+
+-379.715488
+
+-385.088507
+
+-390.517802
+
+-395.795886
+
+-405.103353
+
+-408.772971
+
+-411.585510
+
+-413.964828
+
+-412.640090
+
+-410.312994
+
+-407.075514
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+\ldots{}
+
+151118
+
+123.425156
+
+135.066750
+
+146.830278
+
+158.266179
+
+178.432451
+
+186.383325
+
+192.477190
+
+197.632402
+
+194.762122
+
+189.720057
+
+182.705486
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+151119
+
+138.938076
+
+144.035821
+
+149.186960
+
+154.194634
+
+163.025256
+
+166.506870
+
+169.175316
+
+171.432735
+
+170.175867
+
+167.967993
+
+164.896378
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+151120
+
+137.225714
+
+138.581369
+
+139.951223
+
+141.282926
+
+143.631274
+
+144.557147
+
+145.266773
+
+145.867094
+
+145.532852
+
+144.945707
+
+144.128866
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+151121
+
+124.134817
+
+124.646762
+
+125.164069
+
+125.666968
+
+126.553790
+
+126.903434
+
+127.171415
+
+127.398118
+
+127.271896
+
+127.050169
+
+126.741699
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+151122
+
+116.835845
+
+113.426805
+
+109.982060
+
+106.633255
+
+100.727911
+
+98.399635
+
+96.615153
+
+95.105538
+
+95.946050
+
+97.422531
+
+99.476627
+
+0
+
+0
+
+0
+
+0
+
+0
+
+0
+
+636910 rows × 17 columns
+
+\hypertarget{training-the-model-on-train-data}{%
+\subsection{Training the Model on Train
+Data}\label{training-the-model-on-train-data}}
+
+AIM :: To make multi-label prediction
+
+To acheive multi-label prediction we train a binary classification model
+on our data seperately for each label and concatenate the predictions
+while giving the output.
+
+\hypertarget{training-decision-tree-classifier-on-the-label-handstart}{%
+\subsubsection{Training Decision Tree Classifier on the label
+HandStart}\label{training-decision-tree-classifier-on-the-label-handstart}}
+
+\begin{lstlisting}[language=Python]
+clf1 = DecisionTreeClassifier()
+clf1.fit(train_data.iloc[:,:11] , train_data.iloc[:,11])
+\end{lstlisting}
+
+\begin{lstlisting}
+DecisionTreeClassifier()
+\end{lstlisting}
+
+\hypertarget{training-decision-tree-classifier-on-the-label-firstdigittouch}{%
+\subsubsection{Training Decision Tree Classifier on the label
+FirstDigitTouch}\label{training-decision-tree-classifier-on-the-label-firstdigittouch}}
+
+\begin{lstlisting}[language=Python]
+clf2 = DecisionTreeClassifier()
+clf2.fit(train_data.iloc[:,:11] , train_data.iloc[:,12])
+\end{lstlisting}
+
+\begin{lstlisting}
+DecisionTreeClassifier()
+\end{lstlisting}
+
+\hypertarget{training-decision-tree-classifier-on-the-label-bothstartloadphase}{%
+\subsubsection{Training Decision Tree Classifier on the label
+BothStartLoadPhase}\label{training-decision-tree-classifier-on-the-label-bothstartloadphase}}
+
+\begin{lstlisting}[language=Python]
+clf3 = DecisionTreeClassifier()
+clf3.fit(train_data.iloc[:,:11] , train_data.iloc[:,13])
+\end{lstlisting}
+
+\begin{lstlisting}
+DecisionTreeClassifier()
+\end{lstlisting}
+
+\hypertarget{training-decision-tree-classifier-on-the-label-liftoff}{%
+\subsubsection{Training Decision Tree Classifier on the label
+LiftOff}\label{training-decision-tree-classifier-on-the-label-liftoff}}
+
+\begin{lstlisting}[language=Python]
+clf4 = DecisionTreeClassifier()
+clf4.fit(train_data.iloc[:,:11] , train_data.iloc[:,14])
+\end{lstlisting}
+
+\begin{lstlisting}
+DecisionTreeClassifier()
+\end{lstlisting}
+
+\hypertarget{training-decision-tree-classifier-on-the-label-replace}{%
+\subsubsection{Training Decision Tree Classifier on the label
+Replace}\label{training-decision-tree-classifier-on-the-label-replace}}
+
+\begin{lstlisting}[language=Python]
+clf5 = DecisionTreeClassifier()
+clf5.fit(train_data.iloc[:,:11] , train_data.iloc[:,15])
+\end{lstlisting}
+
+\begin{lstlisting}
+DecisionTreeClassifier()
+\end{lstlisting}
+
+\hypertarget{training-decision-tree-classifier-on-the-label-bothreleased}{%
+\subsubsection{Training Decision Tree Classifier on the label
+BothReleased}\label{training-decision-tree-classifier-on-the-label-bothreleased}}
+
+\begin{lstlisting}[language=Python]
+clf6 = DecisionTreeClassifier()
+clf6.fit(train_data.iloc[:,:11] , train_data.iloc[:,16])
+\end{lstlisting}
+
+\begin{lstlisting}
+DecisionTreeClassifier()
+\end{lstlisting}
+
+\hypertarget{accuracy-scores-for-each-label}{%
+\subsection{Accuracy Scores for each
+Label}\label{accuracy-scores-for-each-label}}
+
+WARNING :: The high accuracy only applies to each label seperately
+
+\begin{lstlisting}[language=Python]
+score1 = clf1.score(test_data.iloc[:,:11], test_data.iloc[:,11]) * 100
+print("HandStart Acc          :: %.2f" % score1,"%")
+
+score2 = clf2.score(test_data.iloc[:,:11], test_data.iloc[:,12]) * 100
+print("FirstDigitTouch Acc    :: %.2f" % score2,"%")
+
+score3 = clf3.score(test_data.iloc[:,:11], test_data.iloc[:,13]) * 100
+print("BothStartLoadPhase Acc :: %.2f" % score3,"%")
+
+score4 = clf4.score(test_data.iloc[:,:11], test_data.iloc[:,14]) * 100
+print("LiftOff Acc            :: %.2f" % score4,"%")
+
+
+score5 = clf5.score(test_data.iloc[:,:11], test_data.iloc[:,15]) * 100
+print("Replace Acc            :: %.2f" % score5,"%")
+
+
+score6 = clf6.score(test_data.iloc[:,:11], test_data.iloc[:,16]) * 100
+print("BothReleased Acc       :: %.2f" % score6,"%")
+\end{lstlisting}
+
+\begin{lstlisting}
+HandStart Acc          :: 95.53 %
+FirstDigitTouch Acc    :: 95.36 %
+BothStartLoadPhase Acc :: 95.36 %
+LiftOff Acc            :: 95.23 %
+Replace Acc            :: 95.01 %
+BothReleased Acc       :: 95.10 %
+\end{lstlisting}
+
+\hypertarget{saving-models-to-pickle-files-using-joblib}{%
+\subsection{Saving models to pickle files using
+Joblib}\label{saving-models-to-pickle-files-using-joblib}}
+
+\begin{lstlisting}[language=Python]
+joblib.dump(clf1, 'pickle1.pkl')
+joblib.dump(clf2, 'pickle2.pkl')
+joblib.dump(clf3, 'pickle3.pkl')
+joblib.dump(clf4, 'pickle4.pkl')
+joblib.dump(clf5, 'pickle5.pkl')
+joblib.dump(clf6, 'pickle6.pkl')
+\end{lstlisting}
+
+\begin{lstlisting}
+['pickle6.pkl']
+\end{lstlisting}
